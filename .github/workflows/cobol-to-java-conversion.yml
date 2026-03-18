@@ -1,0 +1,51 @@
+name: COBOL to Java Conversion with Auto-Commit
+
+on:
+  push:
+    paths:
+      - 'cobol-sources/**'
+
+jobs:
+  convert-and-commit:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Build converter
+        run: |
+          mkdir -p src/main/java/com/cobolconverter
+          javac src/main/java/com/cobolconverter/CobolToJavaConverter.java -d target/classes
+
+      - name: Run COBOL to Java conversion
+        run: |
+          mkdir -p java-generated
+          java -cp target/classes com.cobolconverter.CobolToJavaConverter
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Actions Bot"
+
+      - name: Commit converted files
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git add java-generated/
+            git commit -m "chore: auto-convert COBOL to Java [skip ci]"
+            git push origin main
+          else
+            echo "No changes to commit"
+          fi
