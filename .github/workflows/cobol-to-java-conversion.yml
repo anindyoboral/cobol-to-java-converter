@@ -45,7 +45,7 @@ jobs:
       - name: Run COBOL to Java conversion
         run: |
           if [ -f target/classes/com/cobolconverter/CobolToJavaConverter.class ]; then
-            java -cp target/classes com.cobolconverter.CobolToJavaConverter
+            java -cp target/classes com.cobolconverter.CobolToJavaConverter cobol-sources java-generated
           else
             echo "Warning: Compiled converter class not found"
           fi
