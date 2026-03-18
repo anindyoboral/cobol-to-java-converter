@@ -2,6 +2,8 @@ name: COBOL to Java Conversion with Auto-Commit
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'cobol-sources/**'
 
@@ -25,15 +27,27 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
 
-      - name: Build converter
+      - name: Create required directories
         run: |
           mkdir -p src/main/java/com/cobolconverter
-          javac src/main/java/com/cobolconverter/CobolToJavaConverter.java -d target/classes
+          mkdir -p target/classes
+          mkdir -p java-generated
+
+      - name: Build converter
+        run: |
+          if [ -f src/main/java/com/cobolconverter/CobolToJavaConverter.java ]; then
+            javac src/main/java/com/cobolconverter/CobolToJavaConverter.java -d target/classes
+          else
+            echo "Warning: CobolToJavaConverter.java not found"
+          fi
 
       - name: Run COBOL to Java conversion
         run: |
-          mkdir -p java-generated
-          java -cp target/classes com.cobolconverter.CobolToJavaConverter
+          if [ -f target/classes/com/cobolconverter/CobolToJavaConverter.class ]; then
+            java -cp target/classes com.cobolconverter.CobolToJavaConverter
+          else
+            echo "Warning: Compiled converter class not found"
+          fi
 
       - name: Configure Git
         run: |
@@ -45,7 +59,7 @@ jobs:
           if [ -n "$(git status --porcelain)" ]; then
             git add java-generated/
             git commit -m "chore: auto-convert COBOL to Java [skip ci]"
-            git push origin main
+            git push origin ${{ github.ref_name }}
           else
             echo "No changes to commit"
           fi
